@@ -1,0 +1,100 @@
+﻿
+@{
+    ViewBag.Title = "Employee CRUD";
+}
+
+
+@(Html.Kendo().Grid<Models.DbModels.Employee>()
+         .Name("EmpGrid")
+         .Selectable()
+         .Columns(columns =>
+         {
+             columns.Bound(c => c.FirstName).Filterable(false);
+             columns.Bound(c => c.LastName).Filterable(false);
+             columns.Bound(c => c.Age).Filterable(false);
+             columns.Bound(c => c.Job).Filterable(false);
+             columns.Bound(c => c.Salary);
+             columns.Command(command =>
+             {
+                 command.Edit();
+                 command.Custom("Delete").Click("openWindow");
+
+             }).Width(300);
+         })
+         .HtmlAttributes(new { style = "height: 550px;" })
+         .Editable(editable => editable.Mode(GridEditMode.PopUp))
+         .Editable(editable => editable.DisplayDeleteConfirmation(false))
+         .Scrollable()
+         .Filterable(op => op.Operators(x => x.ForNumber(n => n.Clear().IsGreaterThan("More Than"))).Extra(false))
+         .Selectable()
+         .Sortable(x => x.ShowIndexes(true))
+         .Pageable(pageable => pageable
+             .Refresh(true)
+             .PageSizes(true)
+             .ButtonCount(5))
+         .DataSource(dataSource => dataSource
+             .Ajax()
+             .Model(model =>
+             {
+                 model.Id(emp => emp.EmployeeId);
+             })
+             .Events(events => events.Error("error_handler"))
+             .Read(read => read.Action("Employees_Read", "Employee"))
+             .Update(update => update.Action("Employees_Update", "Employee"))
+             .Create(create => create.Action("Employees_Create", "Employee"))
+             .Destroy(destroy => destroy.Action("Employees_Delete", "Employee"))
+             .PageSize(20)
+         )
+         .ToolBar(toolbar => toolbar.Create().Text("Add Employee"))
+)
+
+<div id="modalWindow">
+    <h2>Delete ?</h2>
+    <button id="yes" class="k-button">Yes</button>
+    <button id="no" class="k-button">No</button>
+</div>
+
+<script type="text/javascript">
+    var wnd;
+    $(document).ready(function () {
+        wnd = $("#modalWindow").kendoWindow({
+            title: "Delete confirmation",
+            modal: true,
+            visible: false,
+            resizable: false,
+            width: 300
+        }).data("kendoWindow");
+    });
+
+    function openWindow(e) {
+        e.preventDefault();
+
+        var grid = this;
+        var row = $(e.currentTarget).closest("tr");
+        wnd.center().open();
+
+        $("#yes").click(function () {
+            grid.removeRow(row);
+            wnd.close();
+        });
+
+        $("#no").click(function () {
+            wnd.close();
+        });
+    }
+
+
+    function error_handler(e) {
+        if (e.errors) {
+            var message = "Errors:\n";
+            $.each(e.errors, function (key, value) {
+                if ('errors' in value) {
+                    $.each(value.errors, function () {
+                        message += this + "\n";
+                    });
+                }
+            });
+            console.log(message);
+        }
+    }
+</script>
